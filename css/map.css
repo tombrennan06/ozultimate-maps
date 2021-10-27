@@ -7,7 +7,8 @@ html, body {
 #header {
   height: 1.5em;
 }
-#header div {float: right;}
+#header div {float: right; margin-left: 0.25em; margin-right:0.25em}
+#header div a {font-weight: bold; text-decoration: none;}
 #map {
   height: calc(100% - 2em);
 }
