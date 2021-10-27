@@ -63,7 +63,8 @@ var FileLoader = L.Class.extend({
         if (typeof content == 'string') {
             content = JSON.parse(content);
         }
-        var layer = L.geoJson(content, this.options.layerOptions);
+        //var layer = L.geoJson(content, this.options.layerOptions); 
+        var layer = L.geoJson(flatten(content), this.options.layerOptions); // modified TB 27/05/16 to allow editing (loading?) of multigeometries via Draw
 
         if (layer.getLayers().length === 0) {
             throw new Error('GeoJSON has no valid layers.');
