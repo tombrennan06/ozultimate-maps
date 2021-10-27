@@ -24,7 +24,6 @@ L.Control.mouseCoordinate  = L.Control.extend({
         this._gpsPositionContainer = L.DomUtil.create("div","gpsPos",container);
         
         map.on("mousemove", this._update, this);
-        map.on("click", this._update, this); //added by TB 15/04/16 to assist with mobile
         //map.whenReady(this._update, this);
         
         return container;

@@ -4,8 +4,12 @@ html, body {
   padding: 0;
   font-family: arial, helvetica sans-serif;
 }
+#header {
+  height: 1.5em;
+}
+#header div {float: right;}
 #map {
-  height: 100%;
+  height: calc(100% - 2em);
 }
 .leaflet-container {
   cursor: crosshair !important;

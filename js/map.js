@@ -23,3 +23,17 @@ map.addControl(opacitySlider);
 opacitySlider.setOpacityLayer(lpi_nsw_topo_map);
 L.control.scale({metric: true, imperial: false}).addTo(map);
 L.control.mouseCoordinate({utm:true,utmref:false}).addTo(map);
+
+//-----------------
+//Leaflet.FileLayer
+var style = {color:'red', opacity: 1.0, fillOpacity: 1.0, weight: 2, clickable: false};
+L.Control.FileLayerLoad.LABEL = '<i class="fa fa-folder-open"></i>';
+L.Control.fileLayerLoad({
+    fitBounds: true,
+    layerOptions: {style: style,
+                   pointToLayer: function (data, latlng) {
+                      return L.marker(latlng);
+                   }
+                   , onEachFeature: function (feature, layer) {layer.bindPopup(feature.properties.name);}
+                   },
+}).addTo(map);
