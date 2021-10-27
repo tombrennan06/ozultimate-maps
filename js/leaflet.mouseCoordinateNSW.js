@@ -1,12 +1,14 @@
 /* 
     Author     : Johannes Rudolph
+    Updated by : Tom Brennan, for NSW-specific field
 */
 /* globals L: true */
-L.Control.mouseCoordinate  = L.Control.extend({
+L.Control.mouseCoordinateNSW = L.Control.extend({
     options: {
         gps: true,
         utm: false,
         utmref: false,
+        nswmap: false,
         position: 'bottomright',
         
         _sm_a: 6378137.0,
@@ -49,8 +51,15 @@ L.Control.mouseCoordinate  = L.Control.extend({
             var utmref = this._utm2mgr(this._geo2utm(gps));
             content += "<tr><td>UTM REF</td><td colspan='2'>"+utmref.zone+"&nbsp;" +utmref.band+"&nbsp;" +utmref.x+"&nbsp;" +utmref.y+"</td></tr>"; 
         }
-            
+        
         content += "</table>";
+
+        if(this.options.nswmap){
+            var sixfigure = this._utm26figure(this._geo2utm(gps));
+            var nswmap = this._nswMapRef(gps);
+            content += "<table><tr><td>"+nswmap+"</td><td>"+sixfigure+"</td></tr></table>"; 
+        } 
+        
         this._gpsPositionContainer.innerHTML = content;
     },    
     _utm2geo: function utm2geo(utm){
@@ -447,9 +456,45 @@ L.Control.mouseCoordinate  = L.Control.extend({
             coord.EW = "W";
         }
         return coord;
+    },
+    _utm26figure: function (utm){
+        var ew = utm.x;
+        var nw = utm.y;
+     
+        var ew2 = ew.substr(2,3);
+        var nw2 = nw.substr(2,3);
+        
+        return ew2 + nw2;
+    },
+    _nawMapGridRef: function (gps) {
+      var lat = gps.lat, lng = gps.lng;
+
+      var X = Math.floor(lng * 2) - 211; if (X < 10) X = '0'+X;
+      var Y = Math.floor(lat * 2) + 98;  if (Y < 10) Y = '0'+Y;
+
+      if ((lat % 0.5) < -0.25) {
+          var s25k = [ X, Y, '-', ((lng % 0.5) >= 0.25)? 2 : 3, ((lat % 0.25) > -0.125)? 'N' : 'S' ].join('');
+          var s50k = [ X, Y, '-','S'].join('');
+      } else {
+          var s25k = [ X, Y, '-', ((lng % 0.5) >= 0.25)? 1 : 4, ((lat % 0.25) > -0.125)? 'N' : 'S' ].join('');
+          var s50k = [ X, Y, '-','N'].join('');
+      }
+      var s100k = [ X, Y].join('');
+      return [s25k, s50k, s100k];
+    },
+    _nswMapRef: function (gps) {
+      var mapGrid = this._nawMapGridRef(gps);
+      var mapList = {};
+      for (i=0; i < nsw_map_bounds.length; i++) {
+        mapList[nsw_map_bounds[i].mapnumber] = nsw_map_bounds[i].maptitle;       
+      }
+      if (mapGrid[0] in mapList) { return mapList[mapGrid[0]]}
+      else if (mapGrid[1] in mapList) { return mapList[mapGrid[1]]}
+      else if (mapGrid[2] in mapList) { return mapList[mapGrid[2]]}
+      else return '';
     }
 });
 
-L.control.mouseCoordinate = function (options) {
-    return new L.Control.mouseCoordinate(options);
+L.control.mouseCoordinateNSW = function (options) {
+    return new L.Control.mouseCoordinateNSW(options);
 };
