@@ -4,17 +4,17 @@ window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m, key, value) 
 });
 var init = {"lat": -33.7067, "lng": 150.3156, "zoom": 13 } //katoomba
 
-var lpi_nsw_imagery = L.tileLayer.fallback('http://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_Imagery/MapServer/tile/{z}/{y}/{x}', {
+var lpi_nsw_imagery = L.tileLayer.fallback('https://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_Imagery/MapServer/tile/{z}/{y}/{x}', {
   maxZoom: 21,
   attribution: '&copy; Department Finance, Services and Innovation 2017'
 });
-var lpi_nsw_topo_map = L.tileLayer('http://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+var lpi_nsw_topo_map = L.tileLayer('https://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
   maxZoom: 21,
   maxNativeZoom: 16,
   attribution: '&copy; Department Finance, Services and Innovation 2017',
   opacity: 0.7
 });
-var lpi_nsw_basemap = L.tileLayer('http://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_Base_Map/MapServer/tile/{z}/{y}/{x}', {
+var lpi_nsw_basemap = L.tileLayer('https://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_Base_Map/MapServer/tile/{z}/{y}/{x}', {
   maxZoom: 21,
   //attribution: '&copy; Department Finance, Services and Innovation 2017'
 });
