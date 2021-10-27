@@ -1,3 +1,8 @@
+var params = {};
+window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m, key, value) {
+  params[key] = value;
+});
+
 var lpi_nsw_imagery = L.tileLayer('http://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_Imagery/MapServer/tile/{z}/{y}/{x}', {
   maxZoom: 21,
   attribution: '&copy; Land and Property Information 2016'
@@ -9,14 +14,13 @@ var lpi_nsw_topo_map = L.tileLayer('http://maps.six.nsw.gov.au/arcgis/rest/servi
   opacity: 0.7
 });
 
-var lat = -33.7067; //katoomba
-var lng = 150.3156; //katoomba
+var lat = params.lat || -33.7067; //katoomba
+var lng = params.lng || 150.3156; //katoomba
 var map = L.map('map', {
   center: [lat, lng], 
-  zoom: 13, 
+  zoom: params.zoom || 13, 
   layers: [lpi_nsw_imagery, lpi_nsw_topo_map],
   zoomControl: true
-	//,	maxBounds: [[-38.83, 135],[-27.05, 159.43]]
 });
 
 var opacitySlider = new L.Control.opacitySlider();
@@ -84,7 +88,7 @@ map.on('draw:edited', function(e) {
   });
 });
 
-// ------------
+
 // Leaflet.Save 
 // Save to KML requires tokml.js, Save to GPX requires togpx.js
 L.Control.Save = L.Control.extend({
@@ -154,3 +158,80 @@ var saveGPX = new L.Control.Save(drawnItems, {exportType: 'gpx', label: '<span c
 '    <i class="fa fa-stack-1x">G</i>\n'+
 '</span>'});
 map.addControl(saveGPX);
+
+// Leaflet.Permalink 
+// Allows sharing of a permanent link. 
+// Requires 
+L.Control.Permalink = L.Control.extend({
+    statics: {
+    },
+    options: {
+        position: 'topleft',
+        layerOptions: {},
+        addToMap: true,
+				title: 'Share via link',
+				label: '&#8965;'
+    },
+
+    initialize: function (featureGroup, options) {
+        L.Util.setOptions(this, options);
+        this._featureGroup = featureGroup;
+    },
+
+    onAdd: function (map) {
+        // Initialize map control
+				return this._initContainer();
+    },
+
+    _initContainer: function () {
+        var zoomName = 'leaflet-control-permalink leaflet-control-zoom',
+            barName = 'leaflet-bar',
+            partName = barName + '-part',
+            container = L.DomUtil.create('div', zoomName + ' ' + barName);
+        var link = L.DomUtil.create('a', zoomName + '-in ' + partName, container);
+        link.innerHTML = this.options.label;
+        link.href = '#';
+        link.title = this.options.title;
+
+        L.DomEvent.disableClickPropagation(link);
+        L.DomEvent.on(link, 'click', function (e) {
+          var _params = {};
+          _params.lat = map.getCenter().lat;
+          _params.lng = map.getCenter().lng;
+          _params.zoom = map.getZoom();
+          if (this._featureGroup.getLayers().length > 0) {
+            var data = this._featureGroup.toGeoJSON();
+            var id = Date.now();
+            _params.id = id;
+            $.ajax({
+              type : "POST",
+              url : "save_geojson.php",
+              data : { id: id, json : JSON.stringify(data) },
+              error: function(xhr){ alert("An error occured: " + xhr.status + " " + xhr.statusText); },
+              success: function(xhr){ window.prompt("Copy to clipboard: Ctrl/Cmd+C, Enter", [location.protocol, '//', location.host, location.pathname].join('') + '?' + $.param(_params)); }
+            });
+          } else {
+            window.prompt("Copy to clipboard: Ctrl/Cmd+C, Enter", [location.protocol, '//', location.host, location.pathname].join('') + '?' + $.param(_params));
+          }
+          e.preventDefault();
+        }, this);
+        return container;
+    }
+});
+
+var shareLink = new L.Control.Permalink(drawnItems, {label: '<i class="fa fa-link"></i>'});
+map.addControl(shareLink);
+
+// Add previously saved GeoJSON to map
+function onEachFeature(feature, layer) {
+  if (feature.properties && feature.properties.name) {
+    layer.bindLabel(feature.properties.name);
+  }
+}
+if (params.id) {
+  var geojsonLayer = new L.geoJson.ajax('data/' + params.id + '.geojson', { onEachFeature: onEachFeature } );
+  geojsonLayer.on('data:progress', function(e) {
+    map.fitBounds(geojsonLayer.getBounds(),{ padding: [50,50], maxZoom: 16 });
+  });
+  geojsonLayer.addTo(map);
+}
