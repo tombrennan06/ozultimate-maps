@@ -66,13 +66,16 @@ L.Control.opacitySlider = L.Control.extend({
           min: 0,
           max: 100,
           value: 60,
-          step: 10,
+          step: 1,
           start: function ( event, ui) {
             //When moving the slider, disable panning.
             map.dragging.disable();
-            map.once('mousedown', function (e) { 
+            /*map.once('mousedown', function (e) { 
               map.dragging.enable();
-            });
+            });*/
+          },
+          stop: function ( event, ui) {
+              map.dragging.enable()
           },
           slide: function ( event, ui ) {
             var slider_value = ui.value / 100;
