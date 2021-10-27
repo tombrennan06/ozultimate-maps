@@ -4,15 +4,19 @@ window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m, key, value) 
 });
 var init = {"lat": -33.7067, "lng": 150.3156, "zoom": 13 } //katoomba
 
-var lpi_nsw_imagery = L.tileLayer('http://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_Imagery/MapServer/tile/{z}/{y}/{x}', {
+var lpi_nsw_imagery = L.tileLayer.fallback('http://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_Imagery/MapServer/tile/{z}/{y}/{x}', {
   maxZoom: 21,
-  attribution: '&copy; Land and Property Information 2016'
+  attribution: '&copy; Department Finance, Services and Innovation 2017'
 });
 var lpi_nsw_topo_map = L.tileLayer('http://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
   maxZoom: 21,
   maxNativeZoom: 16,
-  attribution: '&copy; Land and Property Information 2016',
+  attribution: '&copy; Department Finance, Services and Innovation 2017',
   opacity: 0.7
+});
+var lpi_nsw_basemap = L.tileLayer('http://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_Base_Map/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 21,
+  //attribution: '&copy; Department Finance, Services and Innovation 2017'
 });
 
 var lat = params.lat || init.lat;
@@ -49,10 +53,11 @@ map.addControl(opacitySlider);
 opacitySlider.setOpacityLayer(lpi_nsw_topo_map);
 L.control.scale({metric: true, imperial: false}).addTo(map);
 L.control.mouseCoordinateNSW({utm:true,nswmap:true}).addTo(map);
+map.addControl(new L.Control.MiniMap(lpi_nsw_basemap,{toggleDisplay:true,minimized:true}));
 
 //-----------------
 //Leaflet.FileLayer
-var style = {color:'red', opacity: 1.0, fillOpacity: 1.0, weight: 2, clickable: true};
+var style = {color:'red', opacity: 1.0, fillOpacity: 0.1, weight: 2, clickable: true};
 L.Control.FileLayerLoad.LABEL = '<i class="fa fa-folder-open"></i>';
 L.Control.fileLayerLoad({
   fitBounds: true,
@@ -62,7 +67,8 @@ L.Control.fileLayerLoad({
       return L.marker(latlng);
     }
     ,onEachFeature: onEachFeature
-  }
+  },
+  fileSizeLimit: 4096
 }).addTo(map);
 
 // -----------
@@ -130,8 +136,9 @@ map.on('draw:created', function(e) {
   if (e.layerType === 'polygon') {e.layer.feature.geometry = {"type":"Polygon"}};
   L.DomEvent.addListener(input, 'change', function () {
     e.layer.feature.properties.name = input.value;
-	if (e.layer.feature.properties.name) {e.layer.bindLabel(e.layer.feature.properties.name + ' - ' + measure)}
-	else {e.layer.bindLabel(measure)};
+    e.layer.bindLabel(e.layer.feature.properties.name);
+    if (e.layer.feature.properties.name && (e.layer.feature.geometry.type === "LineString" || e.layer.feature.geometry.type === "Polygon" )) {e.layer.bindLabel(e.layer.feature.properties.name + ' - ' + measure)}
+    else if (e.layer.feature.geometry.type === "LineString" || e.layer.feature.geometry.type === "Polygon" ) {e.layer.bindLabel(measure)}
   });
   L.DomEvent.addListener(input, 'keydown', function (v) {
     if (v.keyCode == 13) {e.layer.closePopup();} //close on enter
@@ -150,13 +157,18 @@ map.on('draw:edited', function(e) {
   var layers = e.layers;
   layers.eachLayer(function (layer) {
     if (getShapeType(layer) === 'polygon') {
-      measure = ' - ' + ((L.GeometryUtil.geodesicArea(layer.getLatLngs()) / 1000000).toFixed(2) + ' km<sup>2</sup>');
+      measure = ((L.GeometryUtil.geodesicArea(layer.getLatLngs()) / 1000000).toFixed(2) + ' km<sup>2</sup>');
+      if (layer.feature.properties.name) {layer.bindLabel(layer.feature.properties.name + ' - ' + measure)}
+      else {layer.bindLabel(measure)};
     }
     if (getShapeType(layer) === 'polyline') {
       measure = L.GeometryUtil.getDistance(layer.getLatLngs()).toFixed(2) + ' km';
+      if (layer.feature.properties.name) {layer.bindLabel(layer.feature.properties.name + ' - ' + measure)}
+      else {layer.bindLabel(measure)};
     }
-	if (layer.feature.properties.name) {layer.bindLabel(layer.feature.properties.name + ' - ' + measure)}
-	else {layer.bindLabel(measure)};
+    if (getShapeType(layer) === 'marker') {
+      layer.bindLabel(name);
+    }
   });
 });
 
@@ -298,8 +310,71 @@ L.Control.Permalink = L.Control.extend({
 var shareLink = new L.Control.Permalink(drawnItems, {label: '<i class="fa fa-link"></i>'});
 map.addControl(shareLink);
 
+//Leaflet.Search
+var nsw_map_loc = [];
+nsw_map_bounds.forEach(function(e) {
+  var x = e["mapnumber"].substr(0,2);
+  var y = e["mapnumber"].substr(2,2);
+  var lng = (parseInt(x,10)+211)/2;
+  var lat = (parseInt(y,10)-98)/2;
+  if (e["mapnumber"].charAt(4) == "-") {//50K & 25K
+    if (e["mapnumber"].charAt(e["mapnumber"].length-2) == "-") { //50K
+      if(e["mapnumber"].charAt(5) =='N') {
+        lat += 0.25;
+      }
+      var clat = lat+0.125;
+      var clng = lng+0.25;
+    } else if (e["mapnumber"].charAt(e["mapnumber"].length-3) == "-") { //25K
+      if (e["mapnumber"].charAt(5)=="1" || e["mapnumber"].charAt(5)=="2") { 
+        lng += 0.25;
+      }
+      if (e["mapnumber"].charAt(5)=="1" || e["mapnumber"].charAt(5)=="4") { 
+        lat += 0.25;
+      }
+      if (e["mapnumber"].charAt(6)=="N") {
+        lat += 0.125;
+      }
+      var clat = lat+0.0625;
+      var clng = lng+0.125;
+    } else {//Inset
+      return;
+    }
+  } else {//100K
+    var clat = lat+0.25;
+    var clng = lng+0.25;
+  }
+  nsw_map_loc.push({"loc":[clat,clng],"title":e.maptitle});
+});
+
+function localData(text, callResponse) {
+  callResponse(nsw_map_loc);
+  return {	//called to stop previous requests on map move
+    abort: function() {
+      console.log('aborted request:'+ text);
+    }
+  };
+}
+var searchOptions = {
+  position: 'topright',
+  sourceData: localData,
+  textPlaceholder:'Find a map by name...',
+  minLength: 2,
+  hideMarkerOnCollapse: true
+  //,collapsed: false
+  //,autoCollapse: true
+}
+var search = new L.Control.Search(searchOptions);
+map.addControl(search);
+
 // Add previously saved GeoJSON or loaded file to map, and allow editing?
 function onEachFeature(feature, layer) {
+  var measure = '';
+  if (feature.geometry.type === 'Polygon') {
+    measure = (L.GeometryUtil.geodesicArea(layer.getLatLngs()) / 1000000).toFixed(2) + ' km<sup>2</sup>';
+  }
+  if (feature.geometry.type === 'LineString') {
+    measure = L.GeometryUtil.getDistance(layer.getLatLngs()).toFixed(2) + ' km';
+  }  
   var input = L.DomUtil.create('input', 'my-input');
   if (feature.properties && feature.properties.name) {
     input.value = feature.properties.name;
@@ -307,14 +382,19 @@ function onEachFeature(feature, layer) {
   L.DomEvent.addListener(input, 'change', function () {
     feature.properties.name = input.value;
     layer.bindLabel(feature.properties.name);
+    if (feature.properties.name && (feature.geometry.type === "LineString" || feature.geometry.type === "Polygon" )) {layer.bindLabel(feature.properties.name + ' - ' + measure)}
+    else if (feature.geometry.type === "LineString" || feature.geometry.type === "Polygon" ) {layer.bindLabel(measure)}
   });
   L.DomEvent.addListener(input, 'keydown', function (v) {
     if (v.keyCode == 13) {layer.closePopup();}
   });
   layer.bindPopup(input);
   layer.bindLabel(feature.properties.name);
+  if (feature.properties.name && (feature.geometry.type === "LineString" || feature.geometry.type === "Polygon" )) {layer.bindLabel(feature.properties.name + ' - ' + measure)}
+  else if (feature.geometry.type === "LineString" || feature.geometry.type === "Polygon" ) {layer.bindLabel(measure)}
   drawnItems.addLayer(layer); //dodgy adding to global?
 }
+
 if (params.id) {
   var geojsonLayer = new L.geoJson.ajax('data/' + params.id + '.geojson', { onEachFeature: onEachFeature, color: 'red', weight: 2, opacity: 1 } );
   geojsonLayer.on('data:progress', function(e) {
