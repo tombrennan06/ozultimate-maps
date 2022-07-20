@@ -148,26 +148,26 @@ map.on('pm:create', function(e) {
   L.DomEvent.addListener(input, 'change', function () {
     e.layer.feature.properties.name = input.value;
     e.layer.bindTooltip(e.layer.feature.properties.name);
-    if (e.layer.feature.properties.name && (e.layer.feature.geometry.type === "LineString" || e.layer.feature.geometry.type === "Polygon" )) {e.layer.bindTooltip(e.layer.feature.properties.name + ' - ' + measure)}
-    else if (e.layer.feature.geometry.type === "LineString" || e.layer.feature.geometry.type === "Polygon" ) {e.layer.bindTooltip(measure)}
+    if (e.layer.feature.properties.name && (e.layer.feature.geometry.type === "LineString" || e.layer.feature.geometry.type === "Polygon" )) {e.layer.bindTooltip(e.layer.feature.properties.name + ' - ' + measure,{"sticky":true})}
+    else if (e.layer.feature.geometry.type === "LineString" || e.layer.feature.geometry.type === "Polygon" ) {e.layer.bindTooltip(measure,{"sticky":true})}
   });
   L.DomEvent.addListener(input, 'keydown', function (v) {
     if (v.keyCode == 13) {e.layer.closePopup();} //close on enter
   });
   e.layer.bindPopup(input);
-  if (e.layer.feature.properties.name) {e.layer.bindTooltip(e.layer.feature.properties.name + ' - ' + measure)}
-  else {e.layer.bindTooltip(measure)};
+  if (e.layer.feature.properties.name) {e.layer.bindTooltip(e.layer.feature.properties.name + ' - ' + measure,{"sticky":true})}
+  else {e.layer.bindTooltip(measure,{"sticky":true})};
 
   e.layer.on('pm:edit', function(e) {
     if (e.shape === 'Polygon' || e.shape === 'Rectangle') {
       measure = ((L.GeometryUtil.geodesicArea(e.layer.getLatLngs()[0]) / 1000000).toFixed(2) + ' km<sup>2</sup>');
-      if (e.layer.feature.properties.name) {e.layer.bindTooltip(e.layer.feature.properties.name + ' - ' + measure)}
-      else {e.layer.bindTooltip(measure)};
+      if (e.layer.feature.properties.name) {e.layer.bindTooltip(e.layer.feature.properties.name + ' - ' + measure,{"sticky":true})}
+      else {e.layer.bindTooltip(measure,{"sticky":true})};
     }
     if (e.shape === 'Line') {
       measure = L.GeometryUtil.getDistance(e.layer.getLatLngs()).toFixed(2) + ' km';
-      if (e.layer.feature.properties.name) {e.layer.bindTooltip(e.layer.feature.properties.name + ' - ' + measure)}
-      else {e.layer.bindTooltip(measure)};
+      if (e.layer.feature.properties.name) {e.layer.bindTooltip(e.layer.feature.properties.name + ' - ' + measure,{"sticky":true})}
+      else {e.layer.bindTooltip(measure,{"sticky":true})};
     }
     if (e.shape === 'Marker') {
       e.layer.bindTooltip(name);
@@ -391,17 +391,17 @@ function onEachFeature(feature, layer) {
   } else {feature.properties.name = ''}
   L.DomEvent.addListener(input, 'change', function () {
     feature.properties.name = input.value;
-    layer.bindTooltip(feature.properties.name);
-    if (feature.properties.name && (feature.geometry.type === "LineString" || feature.geometry.type === "Polygon" )) {layer.bindTooltip(feature.properties.name + ' - ' + measure)}
-    else if (feature.geometry.type === "LineString" || feature.geometry.type === "Polygon" ) {layer.bindTooltip(measure)}
+    layer.bindTooltip(feature.properties.name,{"sticky":true});
+    if (feature.properties.name && (feature.geometry.type === "LineString" || feature.geometry.type === "Polygon" )) {layer.bindTooltip(feature.properties.name + ' - ' + measure,{"sticky":true})}
+    else if (feature.geometry.type === "LineString" || feature.geometry.type === "Polygon" ) {layer.bindTooltip(measure,{"sticky":true})}
   });
   L.DomEvent.addListener(input, 'keydown', function (v) {
     if (v.keyCode == 13) {layer.closePopup();}
   });
   layer.bindPopup(input);
-  layer.bindTooltip(feature.properties.name);
-  if (feature.properties.name && (feature.geometry.type === "LineString" || feature.geometry.type === "Polygon" )) {layer.bindTooltip(feature.properties.name + ' - ' + measure)}
-  else if (feature.geometry.type === "LineString" || feature.geometry.type === "Polygon" ) {layer.bindTooltip(measure)}
+  layer.bindTooltip(feature.properties.name,{"sticky":true});
+  if (feature.properties.name && (feature.geometry.type === "LineString" || feature.geometry.type === "Polygon" )) {layer.bindTooltip(feature.properties.name + ' - ' + measure,{"sticky":true})}
+  else if (feature.geometry.type === "LineString" || feature.geometry.type === "Polygon" ) {layer.bindTooltip(measure,{"sticky":true})}
 
   layer.on('pm:remove', function(e) {
     drawnItems.removeLayer(e.layer);
