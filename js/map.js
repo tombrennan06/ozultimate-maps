@@ -181,6 +181,25 @@ map.on('pm:create', function(e) {
   drawnItems.addLayer(e.layer);
 });
 
+map.on("pm:drawstart", ({ workingLayer }) => {
+  workingLayer.on("pm:change", (e) => {
+    if (e.shape === 'Line' && e.latlngs.length>1 ) {
+      total = 'Total = ' + L.GeometryUtil.getDistance(e.latlngs).toFixed(2) + ' km';
+      workingLayer.bindTooltip(
+        total,
+        {
+          offset: L.point(-10, -10),
+          opacity: 0.75
+        }
+      ).openTooltip();
+    }
+    else if (e.shape === 'Polygon' || e.shape === 'Rectangle') {
+      measure = ((L.GeometryUtil.geodesicArea(e.latlngs[0]) / 1000000).toFixed(2) + ' km<sup>2</sup>');
+      workingLayer.bindTooltip(measure,{}).openTooltip();
+    }
+  });
+});
+
 //-----------------
 // Leaflet.Save 
 // Save to KML requires tokml.js, Save to GPX requires togpx.js
@@ -406,7 +425,7 @@ function onEachFeature(feature, layer) {
   layer.on('pm:remove', function(e) {
     drawnItems.removeLayer(e.layer);
   });
-  
+
   drawnItems.addLayer(layer); //dodgy adding to global?
 }
 
