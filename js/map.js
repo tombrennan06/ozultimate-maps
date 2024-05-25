@@ -42,6 +42,7 @@ var map = L.map('map', {
 var drawnItems = new L.GeoJSON(); //Geoman (pm) automatically added ie drawnItems.pm
 map.addLayer(drawnItems);
 
+
 //-----------------
 //From
 //http://stackoverflow.com/questions/31221088/how-to-calculate-the-distance-of-a-polyline-in-leaflet-like-geojson-io
@@ -130,13 +131,53 @@ var getShapeType = function(layer) {
   if (layer instanceof L.Polyline) { return 'polyline'; }
 };
 
+var measureLine = function(latlngs) {
+  return {
+    totalLength: L.GeometryUtil.getDistance(latlngs).toFixed(2) + ' km',
+    lastSegLength: null   // Future use
+  };
+}
+
+var measureArea = function(latlngs) {
+  return  { totalArea: ((L.GeometryUtil.geodesicArea(latlngs[0]) / 1000000).toFixed(2) + ' km<sup>2</sup>') };
+}
+
+var getLineMeasurementTooltip = function(tooltip, obj) {
+  if (obj.shape === 'Line') {
+    var { length } = obj.latlngs.flat();
+
+    if (length <= 2) {
+      originalText = L.PM.Utils.getTranslation('tooltips.continueLine');
+    } else {
+      originalText = L.PM.Utils.getTranslation('tooltips.finishLine');
+    }
+
+    originalText = originalText + '<br/>';
+    totalLengthTxt = '<b/>' + L.PM.Utils.getTranslation('measurements.totalLength') + '</b/>';
+
+    return tooltip.text = originalText + '  \n' + totalLengthTxt+ ': ' + measureLine(obj.latlngs).totalLength;
+  }
+
+  return null
+};
+
+var getAreaMeasurementTooltip = function(tooltip, obj) {
+  if (obj.shape === 'Polygon' || obj.shape === 'Rectangle') {
+    totalAreaTxt = '<b/>' + L.PM.Utils.getTranslation('measurements.area') + '</b/>';
+
+    return tooltip.text = totalAreaTxt+ ': ' + measureArea(obj.latlngs).totalArea;
+  }
+
+  return null
+};
+
 map.on('pm:create', function(e) {
   var measure = '';
   if (e.shape === 'Polygon' || e.shape === 'Rectangle' ) {
-    measure = (L.GeometryUtil.geodesicArea(e.layer.getLatLngs()[0]) / 1000000).toFixed(2) + ' km<sup>2</sup>';
+    measure = measureArea(e.layer.getLatLngs()).totalArea;
   }
   if (e.shape === 'Line') {
-    measure = L.GeometryUtil.getDistance(e.layer.getLatLngs()).toFixed(2) + ' km';
+    measure = measureLine(e.layer.getLatLngs()).totalLength;
   }
   var input = L.DomUtil.create('input', 'my-input');
   input.value = '';
@@ -160,17 +201,17 @@ map.on('pm:create', function(e) {
 
   e.layer.on('pm:edit', function(e) {
     if (e.shape === 'Polygon' || e.shape === 'Rectangle') {
-      measure = ((L.GeometryUtil.geodesicArea(e.layer.getLatLngs()[0]) / 1000000).toFixed(2) + ' km<sup>2</sup>');
-      if (e.layer.feature.properties.name) {e.layer.bindTooltip(e.layer.feature.properties.name + ' - ' + measure,{"sticky":true})}
-      else {e.layer.bindTooltip(measure,{"sticky":true})};
+      measure = measureArea(e.layer.getLatLngs()).totalArea;
     }
-    if (e.shape === 'Line') {
-      measure = L.GeometryUtil.getDistance(e.layer.getLatLngs()).toFixed(2) + ' km';
-      if (e.layer.feature.properties.name) {e.layer.bindTooltip(e.layer.feature.properties.name + ' - ' + measure,{"sticky":true})}
-      else {e.layer.bindTooltip(measure,{"sticky":true})};
+    else if (e.shape === 'Line') {
+      measure = measureLine(e.layer.getLatLngs()).totalLength;
     }
+
     if (e.shape === 'Marker') {
       e.layer.bindTooltip(name);
+    } else {
+      if (e.layer.feature.properties.name) {e.layer.bindTooltip(e.layer.feature.properties.name + ' - ' + measure,{"sticky":true})}
+      else {e.layer.bindTooltip(measure,{"sticky":true})};  
     }
   });
   
@@ -183,19 +224,21 @@ map.on('pm:create', function(e) {
 
 map.on("pm:drawstart", ({ workingLayer }) => {
   workingLayer.on("pm:change", (e) => {
+    let tooltip = {};
+
     if (e.shape === 'Line' && e.latlngs.length>1 ) {
-      total = 'Total = ' + L.GeometryUtil.getDistance(e.latlngs).toFixed(2) + ' km';
-      workingLayer.bindTooltip(
-        total,
-        {
-          offset: L.point(-10, -10),
-          opacity: 0.75
-        }
+      getLineMeasurementTooltip(tooltip, e);
+
+      // For line drawing we hijack the existing tooltip, it looks better
+      map.pm.Draw.Line._hintMarker.bindTooltip(
+        tooltip.text, {}
       ).openTooltip();
     }
-    else if (e.shape === 'Polygon' || e.shape === 'Rectangle') {
-      measure = ((L.GeometryUtil.geodesicArea(e.latlngs[0]) / 1000000).toFixed(2) + ' km<sup>2</sup>');
-      workingLayer.bindTooltip(measure,{}).openTooltip();
+    else if (e.shape === 'Rectangle') {
+      measure = measureArea(e.latlngs).totalArea;
+      getAreaMeasurementTooltip(tooltip, e);
+
+      workingLayer.bindTooltip(tooltip.text,{}).openTooltip();
     }
   });
 });
@@ -399,10 +442,12 @@ map.addControl(search);
 function onEachFeature(feature, layer) {
   var measure = '';
   if (feature.geometry.type === 'Polygon') {
-    measure = (L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]) / 1000000).toFixed(2) + ' km<sup>2</sup>';
+    measure = measureArea(layer.getLatLngs()).totalArea;
+    //measure = (L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]) / 1000000).toFixed(2) + ' km<sup>2</sup>';
   }
   if (feature.geometry.type === 'LineString') {
-    measure = L.GeometryUtil.getDistance(layer.getLatLngs()).toFixed(2) + ' km';
+    measure = measureLine(layer.getLatLngs()).totalLength;
+    //measure = L.GeometryUtil.getDistance(layer.getLatLngs()).toFixed(2) + ' km';
   }  
   var input = L.DomUtil.create('input', 'my-input');
   if (feature.properties && feature.properties.name) {
