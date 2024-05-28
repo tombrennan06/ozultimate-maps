@@ -229,7 +229,7 @@ map.on("pm:drawstart", ({ workingLayer }) => {
         tooltip.text, {direction:'bottom', offset:[0,10]}
       ).openTooltip();
     }
-    else if (e.shape === 'Rectangle'git) {
+    else if (e.shape === 'Rectangle') {
       measure = measureArea(e.latlngs).totalArea;
       getAreaMeasurementTooltip(tooltip, e);
 
