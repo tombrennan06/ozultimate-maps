@@ -108,6 +108,7 @@ map.pm.addControls({
   drawRectangle: true,
   drawPolygon: true,
   drawCircle: false,
+  drawText: false,
   editMode: true,
   dragMode:	false,
   cutPolygon: false,
@@ -145,29 +146,23 @@ var measureArea = function(latlngs) {
 var getLineMeasurementTooltip = function(tooltip, obj) {
   if (obj.shape === 'Line') {
     var { length } = obj.latlngs.flat();
-
     if (length <= 2) {
       originalText = L.PM.Utils.getTranslation('tooltips.continueLine');
     } else {
       originalText = L.PM.Utils.getTranslation('tooltips.finishLine');
     }
-
     originalText = originalText + '<br/>';
     totalLengthTxt = '<b/>' + L.PM.Utils.getTranslation('measurements.totalLength') + '</b/>';
-
     return tooltip.text = originalText + '  \n' + totalLengthTxt+ ': ' + measureLine(obj.latlngs).totalLength;
   }
-
   return null
 };
 
 var getAreaMeasurementTooltip = function(tooltip, obj) {
   if (obj.shape === 'Polygon' || obj.shape === 'Rectangle') {
     totalAreaTxt = '<b/>' + L.PM.Utils.getTranslation('measurements.area') + '</b/>';
-
     return tooltip.text = totalAreaTxt+ ': ' + measureArea(obj.latlngs).totalArea;
   }
-
   return null
 };
 
@@ -231,7 +226,7 @@ map.on("pm:drawstart", ({ workingLayer }) => {
 
       // For line drawing we hijack the existing tooltip, it looks better
       map.pm.Draw.Line._hintMarker.bindTooltip(
-        tooltip.text, {}
+        tooltip.text, {direction:'bottom', offset:[0,10]}
       ).openTooltip();
     }
     else if (e.shape === 'Rectangle') {

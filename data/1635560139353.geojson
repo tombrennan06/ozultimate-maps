@@ -1,0 +1,1 @@
+{"type":"FeatureCollection","features":[{"properties":{"name":"plm"},"type":"Feature","geometry":{"type":"Point","coordinates":[150.282111,-33.678426]}},{"properties":{"name":"dfg"},"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[150.299449,-33.677426],[150.286102,-33.68289],[150.297689,-33.687496],[150.299449,-33.677426]]]}}]}
